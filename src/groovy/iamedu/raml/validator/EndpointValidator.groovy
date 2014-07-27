@@ -66,13 +66,46 @@ class EndpointValidator {
 
     def result = [
       body: bodyResponse,
+      statusCode: statusCode,
+      contentType: 'application/json'
+    ]
+
+    result
+  }
+
+  def handleResponse(def request, def response, def error) {
+    def action = actions.get(request.method.toUpperCase())
+    def statusCode
+
+    def ramlResponse = action.getResponses().find { k, v ->
+      k.toInteger() < 300
+    }
+
+    if(error) {
+      statusCode = 500
+    } else if(ramlResponse.value.hasBody() && response == null)  {
+      statusCode = 404
+    } else {
+      statusCode = ramlResponse.key.toInteger()
+    }
+
+
+    def result = [
+      body: response,
       statusCode: statusCode
     ]
 
-    
-  }
+    if(ramlResponse.value.hasBody()) {
+      if(request.headers.get("accept")) {
+        def bestMatch = MIMEParse.bestMatch(ramlResponse.value.body.keySet(), request.headers.get("accept")?.first())
+        result.contentType = bestMatch
+      } else {
+        def bestMatch = ramlResponse.value.body.keySet().toList().first()
+        result.contentType = bestMatch
+      }
+    }
 
-  def handleResponse(def request, def response) {
+    result
   }
 
   def handleRequest(def request) {
@@ -126,16 +159,20 @@ class EndpointValidator {
       }
     }
 
-    def headers = request.headerNames.toList().collectEntries {
+    def headerValues = request.headerNames.toList().collectEntries {
       [it, request.getHeaders(it).toList()]
     }
+    def headers = action.headers.collectEntries { k, v ->
+      [k, headerValues.get(k)]
+    }
+
+    headers.put('accept', request.getHeaders("accept").toList())
 
     def result = [
       hasBody: action.hasBody(),
       serviceName: serviceName,
       jsonBody: jsonBody,
       params: params,
-      accept: bestMatch,
       method: request.method,
       headers: headers,
       queryParams: queryParams,

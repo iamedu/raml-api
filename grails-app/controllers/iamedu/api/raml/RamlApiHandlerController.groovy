@@ -43,6 +43,8 @@ class RamlApiHandlerController {
 
     def service
     def result
+    def exception
+    def error = false
 
     if(grailsApplication.mainContext.containsBean(req.serviceName)) {
       service = grailsApplication.mainContext.getBean(req.serviceName)
@@ -60,21 +62,24 @@ class RamlApiHandlerController {
           [it[0].replaceAll("\\{|\\}", ""), it[1]]
         }
 
+        def headers = req.headers.each { k, v ->
+          [k, v]
+        }
+
         if(method.parameterTypes.size() == 0) {
-          try {
-            result = method.invoke(service)
-          } catch(Exception ex) {
-            result = handleServiceException(service, ex)
-          }
+          result = method.invoke(service)
         } else {
           def invokeParams = []
           method.parameterTypes.eachWithIndex { it, i ->
             def param
+            def headerAnnotation =  method.parameterAnnotations[i].find {
+              it.annotationType() == iamedu.api.annotations.ApiHeaderParam
+            }
             def paramAnnotation =  method.parameterAnnotations[i].find {
-              it.annotationType() == iamedu.raml.http.RamlParam
+              it.annotationType() == iamedu.api.annotations.ApiUrlParam
             }
             def queryAnnotation =  method.parameterAnnotations[i].find {
-              it.annotationType() == iamedu.raml.http.RamlQueryParam
+              it.annotationType() == iamedu.api.annotations.ApiQueryParam
             }
             if(paramAnnotation) {
               def parameterName = paramAnnotation.value()
@@ -84,44 +89,45 @@ class RamlApiHandlerController {
               def parameterName = queryAnnotation.value()
               def paramValue = req.queryParams[parameterName]
               param = paramValue.asType(it)
+            } else if(headerAnnotation) {
+              def parameterName = headerAnnotation.value()
+              def paramValue = headers[parameterName]
+              param = paramValue.asType(it)
             } else if(Map.isAssignableFrom(it)) {
               param = JSON.parse(req.jsonBody.toString())
             }
             invokeParams.push(param)
           }
-          try {
-            result = method.invoke(service, invokeParams as Object[])
-          } catch(Exception ex) {
-            result = handleServiceException(service, ex)
-          }
-          try {
-            endpointValidator.handleResponse(req, result)
-          } catch(RamlResponseValidationException ex) {
-            def beans = grailsApplication.mainContext.getBeansOfType(RamlResponseValidationExceptionHandler.class)
-            beans.each {
-              it.handleResponseValidationException(ex)
-            }
-            if(config.iamedu.raml.strictMode) {
-              throw ex
-            }
-          }
+          result = method.invoke(service, invokeParams as Object[])
         }
       } else if(methods.size() > 1) {
         throw new RuntimeException("Only one method can be named ${methodName} in service ${req.serviceName}")
       } else {
-        if(!config.iamedu.raml.serveExamples) {
+        if(!config.api.raml.serveExamples) {
           throw new RuntimeException("No method named ${methodName} in service ${req.serviceName}")
         }
       }
     } else {
-      if(!config.iamedu.raml.serveExamples) {
+      if(!config.api.raml.serveExamples) {
         throw new RuntimeException("No service name ${req.serviceName} exists")
+      }
+    }
+
+    try {
+      result = endpointValidator.handleResponse(req, result, error)
+    } catch(RamlResponseValidationException ex) {
+      def beans = grailsApplication.mainContext.getBeansOfType(RamlResponseValidationExceptionHandler.class)
+      beans.each {
+        it.handleResponseValidationException(ex)
+      }
+      if(config.api.raml.strictMode) {
+        throw ex
       }
     }
     
     log.debug "About to invoke service ${req.serviceName} method $req.method}"
 
-    if(result == null && config.iamedu.raml.serveExamples) {
+    if(result == null && config.api.raml.serveExamples) {
       result = endpointValidator.generateExampleResponse(req)
     }
 
@@ -173,13 +179,15 @@ class RamlApiHandlerController {
     def handler = determineHandler(ex)
     def errorResponse = handler.handleException(ex)
 
-    response.status = errorResponse.statusCode
+    response.status = 500
+
+    ex.printStackTrace()
 
     log.error ex.message, ex
-    if(errorResponse.contentType?.startsWith("application/json")) {
-      render errorResponse.body as JSON
-    } else {
-      render errorResponse.body
+    withFormat {
+      json {
+        render errorResponse as JSON
+      }
     }
   }
 
@@ -206,36 +214,9 @@ class RamlApiHandlerController {
     handler
   }
 
-  private def handleServiceException(def service, Exception ex) {
-    Integer depth = Integer.MAX_VALUE
-    def handler = null
-    for(def entry : service.class.getMethods()) {
-      if(!entry.getName().startsWith("handle") || !entry.parameterTypes.size() == 1) {
-        continue
-      }
-      def type = entry.parameterTypes.first()
-
-      Integer currentDepth = 0
-      Class t = ex.class
-      while(t && t != Throwable.class && t != type) {
-        currentDepth += 1
-        t = t.superclass
-      }
-
-      if(currentDepth < depth && t && t != Throwable.class) {
-        depth = currentDepth
-        handler = entry
-      }
-    }
-    if(!handler) {
-      throw ex
-    }
-    handler.invoke(service, ex)
-  }
-
   private def isPublicUrl(String url) {
     def matcher = new AntPathMatcher()
-    def publicUrls = config.iamedu.raml.security.publicUrls
+    def publicUrls = config.api.raml.security.publicUrls
 
     if(!publicUrls) {
       return false

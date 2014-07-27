@@ -3,8 +3,10 @@ package iamedu.raml.exception.handlers
 import grails.util.GrailsUtil
 
 class UserDefaultExceptionHandler implements UserExceptionHandler<Exception> {
+
   Map handleException(Exception exception) {
     def cause = GrailsUtil.extractRootCause(exception)
+
     def responseBody = [
       errorCode: "unhandledError",
       exception: [
@@ -18,7 +20,9 @@ class UserDefaultExceptionHandler implements UserExceptionHandler<Exception> {
         class: cause.class.name
       ]
     }
+
     responseBody
   }
+
 }
 
