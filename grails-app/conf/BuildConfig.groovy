@@ -28,15 +28,24 @@ grails.project.dependency.resolution = {
         grailsCentral()
         mavenLocal()
         mavenCentral()
+        jcenter()
         // uncomment the below to enable remote dependency resolution
         // from public Maven repositories
         //mavenRepo "http://repository.codehaus.org"
         //mavenRepo "http://download.java.net/maven/2/"
         //mavenRepo "http://repository.jboss.com/maven2/"
+        mavenRepo "https://repository-master.mulesoft.org/releases/"
+        mavenRepo "http://dl.bintray.com/upennlib/maven/"
     }
     dependencies {
         // specify dependencies here under either 'build', 'compile', 'runtime', 'test' or 'provided' scopes eg.
         // runtime 'mysql:mysql-connector-java:5.1.27'
+        compile 'iamedu.api:api-annotations:0.1.0'
+        compile "org.raml:raml-parser:0.8.6"
+        compile "commons-beanutils:commons-beanutils:1.9.2"
+        compile "org.commonjava.mimeparse:mimeparse:0.1.3.3"
+        compile "com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4"
+        compile "jmimemagic:jmimemagic:0.1.2"
     }
 
     plugins {

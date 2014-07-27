@@ -1,3 +1,10 @@
+import iamedu.raml.exception.handlers.*
+import iamedu.raml.security.*
+
+import grails.converters.JSON
+
+import org.springframework.aop.scope.ScopedProxyFactoryBean
+
 class RamlApiGrailsPlugin {
     // the plugin version
     def version = "0.1"
@@ -41,7 +48,27 @@ This plugin reads a raml api definition, and validates requests, responses and d
     }
 
     def doWithSpring = {
-        // TODO Implement runtime spring config (optional)
+        println "Setting up raml api plugin"
+        ramlValidationExceptionHandler(RamlDefaultValidationHandler) {
+        }
+
+        ramlRequestExceptionHandler(RamlDefaultRequestExceptionHandler) {
+        }
+
+        ramlSecurityExceptionHandler(RamlDefaultSecurityExceptionHandler) {
+        }
+
+        generalExceptionHandler(UserDefaultExceptionHandler) {
+        }
+
+        securityHandler(ScopedProxyFactoryBean) {
+          targetBeanName = 'ramlSecurityHandler'
+          proxyTargetClass = true
+        }
+
+        ramlSecurityHandler(DefaultSecurityHandler) { bean ->
+          bean.scope = 'session'
+        }
     }
 
     def doWithDynamicMethods = { ctx ->
@@ -49,7 +76,9 @@ This plugin reads a raml api definition, and validates requests, responses and d
     }
 
     def doWithApplicationContext = { ctx ->
-        // TODO Implement post initialization spring config (optional)
+        JSON.registerObjectMarshaller(com.fasterxml.jackson.databind.node.ObjectNode) {
+          JSON.parse(it.toString())
+        }
     }
 
     def onChange = { event ->
