@@ -163,7 +163,7 @@ class EndpointValidator {
       [it, request.getHeaders(it).toList()]
     }
     def headers = action.headers.collectEntries { k, v ->
-      [k, headerValues.get(k)]
+      [k, headerValues.get(k.toLowerCase())?.first()]
     }
 
     headers.put('accept', request.getHeaders("accept").toList())
