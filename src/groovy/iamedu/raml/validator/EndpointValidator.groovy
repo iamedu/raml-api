@@ -9,6 +9,7 @@ import org.eel.kitchen.jsonschema.util.JsonLoader
 import org.codehaus.groovy.grails.web.util.WebUtils
 
 import org.raml.model.*
+import org.raml.model.parameter.*
 import org.raml.parser.visitor.*
 import org.raml.parser.loader.*
 
@@ -21,13 +22,13 @@ class EndpointValidator {
   
   String serviceName
   String path
-  List<String> params
+  List params
 
   Resource resource
   ResourceLoader loader
   Map<String, Action> actions
 
-  EndpointValidator(ResourceLoader loader, Raml raml, String path, Resource resource, List<String> params, Map<String, Action> actions) {
+  EndpointValidator(ResourceLoader loader, Raml raml, String path, Resource resource, List params, Map<String, Action> actions) {
     this.raml     = raml
     this.path     = path
     this.params   = params
@@ -121,7 +122,7 @@ class EndpointValidator {
     if(request.queryString) {
       queryParams = WebUtils.fromQueryString(request.queryString)
       queryParams = action.queryParameters.collectEntries { k, v ->
-        [k, queryParams.get(k)]
+        [k, validateParam(queryParams.get(k), v)]
       }
     }
 
@@ -163,7 +164,8 @@ class EndpointValidator {
       [it, request.getHeaders(it).toList()]
     }
     def headers = action.headers.collectEntries { k, v ->
-      [k, headerValues.get(k.toLowerCase())?.first()]
+      def headerValue = validateParam(headerValues.get(k.toLowerCase())?.first(), v)
+      [k, headerValue]
     }
 
     headers.put('accept', request.getHeaders("accept").toList())
@@ -200,6 +202,13 @@ class EndpointValidator {
       .replaceAll(" ", "")
       .replaceFirst(".", firstChar)
     serviceName = serviceName + "Service"
+  }
+
+  private def validateParam(def value, def valueDefinition) {
+    if(!value) {
+      value = valueDefinition.defaultValue
+    }
+    value
   }
 
 }

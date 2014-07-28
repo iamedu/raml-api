@@ -59,7 +59,9 @@ class RamlApiHandlerController {
         def method = methods.first()
 
         def params = [req.params, paramValues].transpose().collectEntries {
-          [it[0].replaceAll("\\{|\\}", ""), it[1]]
+          def (key, definition) = it[0]
+          def paramValue = it[1]
+          [key, [definition:definition, value: paramValue]]
         }
 
         def headers = req.headers.each { k, v ->
@@ -84,7 +86,7 @@ class RamlApiHandlerController {
             if(paramAnnotation) {
               def parameterName = paramAnnotation.value()
               def paramValue = params[parameterName]
-              param = paramValue.asType(it)
+              param = paramValue.value.asType(it)
             } else if(queryAnnotation) {
               def parameterName = queryAnnotation.value()
               def paramValue = req.queryParams[parameterName]

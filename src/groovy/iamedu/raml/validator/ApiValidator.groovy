@@ -66,7 +66,10 @@ class ApiValidator {
     def partPattern = /\{[^\{\}]*\}/
 
     def regexPath = resourcePath.replaceAll(partPattern, replacePartPattern)
-    def params = (resourcePath =~ partPattern).collect { it }
+    def params = (resourcePath =~ partPattern).collect { it }.collect {
+      def k = it.replaceAll(/\{|\}/, "")
+      [k, resource.uriParameters.get(k)]
+    }
 
     def pattern = Pattern.compile(basePath + regexPath)
     
