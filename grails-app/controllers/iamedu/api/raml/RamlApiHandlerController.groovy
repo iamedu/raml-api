@@ -129,7 +129,7 @@ class RamlApiHandlerController {
     
     log.debug "About to invoke service ${req.serviceName} method $req.method}"
 
-    if(result == null && config.api.raml.serveExamples) {
+    if((result == null || result.body == null) && config.api.raml.serveExamples) {
       result = endpointValidator.generateExampleResponse(req)
     }
 
