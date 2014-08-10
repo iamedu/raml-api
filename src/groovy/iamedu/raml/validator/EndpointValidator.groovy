@@ -107,7 +107,6 @@ class EndpointValidator {
       }
       if(strictMode && result.contentType.startsWith("application/json")) {
         def mimeType = ramlResponse.value.body.get(result.contentType)
-        println mimeType.schema
         if(mimeType.schema) {
           def schemaFormat = JsonLoader.fromString(raml.consolidatedSchemas.get(mimeType.schema))
           def factory = JsonSchemaFactory.defaultFactory()
