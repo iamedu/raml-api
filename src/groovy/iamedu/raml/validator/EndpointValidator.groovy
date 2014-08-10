@@ -57,6 +57,8 @@ class EndpointValidator {
         def bodyContents = loader.fetchResource(resource)?.getText("UTF-8")
         if(bodyContents) {
           bodyResponse = JSON.parse(bodyContents)
+        } else {
+          bodyResponse = JSON.parse(body.example)
         }
       }
     } else {
