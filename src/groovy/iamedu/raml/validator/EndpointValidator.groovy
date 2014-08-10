@@ -74,7 +74,7 @@ class EndpointValidator {
     result
   }
 
-  def handleResponse(def request, def response, def error) {
+  def handleResponse(def strictMode, def request, def response, def error) {
     def action = actions.get(request.method.toUpperCase())
     def statusCode
 
@@ -96,6 +96,7 @@ class EndpointValidator {
       statusCode: statusCode
     ]
 
+
     if(ramlResponse.value.hasBody()) {
       if(request.headers.get("accept")) {
         def bestMatch = MIMEParse.bestMatch(ramlResponse.value.body.keySet(), request.headers.get("accept")?.first())
@@ -103,6 +104,31 @@ class EndpointValidator {
       } else {
         def bestMatch = ramlResponse.value.body.keySet().toList().first()
         result.contentType = bestMatch
+      }
+      if(strictMode && result.contentType.startsWith("application/json")) {
+        def mimeType = ramlResponse.value.body.get(result.contentType)
+        println mimeType.schema
+        if(mimeType.schema) {
+          def schemaFormat = JsonLoader.fromString(raml.consolidatedSchemas.get(mimeType.schema))
+          def factory = JsonSchemaFactory.defaultFactory()
+
+          def schema = factory.fromSchema(schemaFormat)
+
+          def stringBody = (result.body as JSON).toString()
+          def jsonBody = JsonLoader.fromString(stringBody)
+          def report =  schema.validate(jsonBody)
+
+          if(!report.isSuccess()) {
+            throw new RamlResponseValidationException("The generated response is invalid",
+              request.serviceName,
+              request.method,
+              500, 
+              result.contentType,
+              stringBody,
+              RamlResponseValidationException.ErrorReason.INVALID_RESPONSE_BODY,
+              report)
+          }
+        }
       }
     }
 

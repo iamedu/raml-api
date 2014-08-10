@@ -18,7 +18,8 @@ class RamlResponseValidationException extends RuntimeException {
   enum ErrorReason {
     INVALID_BODY,
     INVALID_STATUS_CODE,
-    INVALID_MIME_TYPE
+    INVALID_MIME_TYPE,
+    INVALID_RESPONSE_BODY
   }
 
   RamlResponseValidationException(String message, String serviceName, String method, Integer statusCode, String mimeType, String body, ErrorReason reason) {

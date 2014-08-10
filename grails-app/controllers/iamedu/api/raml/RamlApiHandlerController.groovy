@@ -116,7 +116,7 @@ class RamlApiHandlerController {
     }
 
     try {
-      result = endpointValidator.handleResponse(req, result, error)
+      result = endpointValidator.handleResponse(config.api.raml.strictMode, req, result, error)
     } catch(RamlResponseValidationException ex) {
       def beans = grailsApplication.mainContext.getBeansOfType(RamlResponseValidationExceptionHandler.class)
       beans.each {
@@ -166,6 +166,17 @@ class RamlApiHandlerController {
     def errorResponse = ramlRequestExceptionHandler.handleRequestException(ex)
 
     render errorResponse as JSON
+  }
+
+  def handleRamlResponseValidationException(RamlResponseValidationException ex) {
+    response.status = 500
+
+    def error = [
+      error: ex.message,
+      validationErrors: ex.jsonError
+    ]
+
+    render error as JSON
   }
 
   def handleRamlValidationException(RamlValidationException ex) {
