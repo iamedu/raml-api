@@ -16,6 +16,7 @@ grails.project.fork = [
     console: [maxMemory: 768, minMemory: 64, debug: false, maxPerm: 256]
 ]
 
+grails.project.repos.default = "bintray"
 grails.project.dependency.resolver = "maven" // or ivy
 grails.project.dependency.resolution = {
     // inherit Grails' default dependencies
@@ -49,7 +50,8 @@ grails.project.dependency.resolution = {
     }
 
     plugins {
-        build(":release:3.0.1",
+        build(":bintray-upload:0.2",
+              ":release:3.0.1",
               ":rest-client-builder:1.0.3") {
             export = false
         }

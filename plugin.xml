@@ -1,0 +1,15 @@
+<plugin name='raml-api' version='0.1.0' grailsVersion='2.4 &gt; *'>
+  <author>Eduardo Díaz</author>
+  <authorEmail>iamedu@gmail.com</authorEmail>
+  <title>Raml Api Plugin</title>
+  <description>This plugin reads a raml api definition, and validates requests, responses and directly calls services
+</description>
+  <documentation>http://grails.org/plugin/raml-api</documentation>
+  <type>RamlApiGrailsPlugin</type>
+  <resources>
+    <resource>RamlUrlMappings</resource>
+    <resource>iamedu.api.raml.RamlApiHandlerController</resource>
+    <resource>iamedu.api.raml.RamlDocumentationController</resource>
+    <resource>iamedu.api.raml.RamlHandlerService</resource>
+  </resources>
+</plugin>
