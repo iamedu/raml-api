@@ -188,7 +188,7 @@ class EndpointValidator {
     }
 
     def headerValues = request.headerNames.toList().collectEntries {
-      [it, request.getHeaders(it).toList()]
+      [it?.toLowerCase(), request.getHeaders(it).toList()]
     }
     def headers = action.headers.collectEntries { k, v ->
       def headerValue = validateParam(headerValues.get(k.toLowerCase())?.first(), v)
