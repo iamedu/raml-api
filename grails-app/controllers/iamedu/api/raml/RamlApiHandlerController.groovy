@@ -29,7 +29,7 @@ class RamlApiHandlerController {
     def req = endpointValidator.handleRequest(request)
     def methodName = req.method.toLowerCase()
 
-    if(!isPublicUrl(req.requestUrl)) {
+    if(!isPublicUrl(req.requestUrl) && methodName != 'options') {
       if(!securityHandler.userAuthenticated(req)) {
         throw new RamlSecurityException("User has not been authenticated")
       }
